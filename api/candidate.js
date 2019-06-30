@@ -1,13 +1,13 @@
 'use strict';
 
-const uuid = require('uuid');
-const AWS = require('aws-sdk'); 
+import { v1 } from 'uuid';
+import { config, DynamoDB } from 'aws-sdk'; 
 
-AWS.config.setPromisesDependency(require('bluebird'));
+config.setPromisesDependency(require('bluebird'));
 
-const dynamoDb = new AWS.DynamoDB.DocumentClient();
+const dynamoDb = new DynamoDB.DocumentClient();
 
-module.exports.submit = (event, context, callback) => {
+export function submit(event, context, callback) {
   const requestBody = JSON.parse(event.body);
   const fullname = requestBody.fullname;
   const email = requestBody.email;
@@ -38,7 +38,7 @@ module.exports.submit = (event, context, callback) => {
         })
       })
     });
-};
+}
 
 
 const submitCandidateP = candidate => {
@@ -55,7 +55,7 @@ const submitCandidateP = candidate => {
 const candidateInfo = (fullname, email, experience) => {
   const timestamp = new Date().getTime();
   return {
-    id: uuid.v1(),
+    id: v1(),
     fullname: fullname,
     email: email,
     experience: experience,
@@ -65,7 +65,7 @@ const candidateInfo = (fullname, email, experience) => {
 };
 
 
-module.exports.list = (event, context, callback) => {
+export function list(event, context, callback) {
   var params = {
       TableName: process.env.CANDIDATE_TABLE,
       ProjectionExpression: "id, fullname, email"
@@ -90,10 +90,10 @@ module.exports.list = (event, context, callback) => {
 
   dynamoDb.scan(params, onScan);
 
-};
+}
 
 
-module.exports.get = (event, context, callback) => {
+export function get(event, context, callback) {
   const params = {
     TableName: process.env.CANDIDATE_TABLE,
     Key: {
@@ -114,24 +114,23 @@ module.exports.get = (event, context, callback) => {
       callback(new Error('Couldn\'t fetch candidate.'));
       return;
     });
-};
+}
 
-module.exports.delete = (event, context, callback) => {
+const _delete = (event, context, callback) => {
   const params = {
     TableName: process.env.CANDIDATE_TABLE,
     Key: {
       id: event.pathParameters.id,
     },
   };
-
   dynamoDb.delete(params, function (err, data) {
     if (err) {
-        context.fail('FAIL:  Error deleting item from dynamodb - ' + err);
+      context.fail('FAIL:  Error deleting item from dynamodb - ' + err);
     }
     else {
-        console.log("DEBUG:  deleteItem worked. ");
-        context.succeed(data);
+      console.log("DEBUG:  deleteItem worked. ");
+      context.succeed(data);
     }
   });
-
 };
+export { _delete as delete };
